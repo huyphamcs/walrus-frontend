@@ -1,18 +1,27 @@
 import { useState, useRef } from "react";
-import { Button, Card, Flex, Text, Progress } from "@radix-ui/themes";
-import { UploadIcon } from "@radix-ui/react-icons";
-import { uploadToWalrus } from "../services/walrus";
+import { Card, Flex, Text, Progress, SegmentedControl, Callout } from "@radix-ui/themes";
+import { UploadIcon, InfoCircledIcon } from "@radix-ui/react-icons";
+import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
+import { uploadToWalrus, uploadToWalrusWithAccount } from "../services/walrus";
 
 interface FileUploadProps {
-  onUploadSuccess: (blobId: string, fileName: string, fileSize: number) => void;
+  onUploadSuccess: (blobId: string, fileName: string, fileSize: number, uploadMethod: "http" | "transaction") => void;
 }
 
+type UploadMode = "testnet" | "account";
+
 export function FileUpload({ onUploadSuccess }: FileUploadProps) {
+  const currentAccount = useCurrentAccount();
+  const { mutateAsync: signAndExecuteTransaction } = useSignAndExecuteTransaction();
+  const suiClient = useSuiClient();
+
+  const [uploadMode, setUploadMode] = useState<UploadMode>("testnet");
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -52,13 +61,30 @@ export function FileUpload({ onUploadSuccess }: FileUploadProps) {
         setUploadProgress((prev) => Math.min(prev + 10, 90));
       }, 200);
 
-      const blobId = await uploadToWalrus(file);
+      let blobId: string;
+
+      if (uploadMode === "testnet") {
+        // Use HTTP testnet endpoint
+        blobId = await uploadToWalrus(file);
+      } else {
+        // Use account-based upload with transaction signing
+        if (!currentAccount?.address) {
+          throw new Error("No account connected");
+        }
+
+        blobId = await uploadToWalrusWithAccount(
+          file,
+          signAndExecuteTransaction,
+          suiClient,
+          currentAccount.address
+        );
+      }
 
       clearInterval(progressInterval);
       setUploadProgress(100);
 
-      // Success callback
-      onUploadSuccess(blobId, file.name, file.size);
+      // Success callback - pass the upload method used
+      onUploadSuccess(blobId, file.name, file.size, uploadMode === "testnet" ? "http" : "transaction");
 
       // Reset state after a short delay
       setTimeout(() => {
@@ -82,6 +108,27 @@ export function FileUpload({ onUploadSuccess }: FileUploadProps) {
   return (
     <Card>
       <Flex direction="column" gap="4">
+        {/* Upload Mode Selector */}
+        <Flex direction="column" gap="2">
+          <Text size="2" weight="medium">
+            Upload Method
+          </Text>
+          <SegmentedControl.Root value={uploadMode} onValueChange={(value) => currentAccount && setUploadMode(value as UploadMode)}>
+            <SegmentedControl.Item value="testnet">Testnet (Free)</SegmentedControl.Item>
+            <SegmentedControl.Item value="account">Signed Account</SegmentedControl.Item>
+          </SegmentedControl.Root>
+          {uploadMode === "account" && currentAccount && (
+            <Callout.Root color="blue" size="1">
+              <Callout.Icon>
+                <InfoCircledIcon />
+              </Callout.Icon>
+              <Callout.Text size="1">
+                Upload will be signed by your wallet. You'll be prompted to approve the transaction.
+              </Callout.Text>
+            </Callout.Root>
+          )}
+        </Flex>
+
         <div
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}

@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { ConnectButton, useCurrentAccount } from "@mysten/dapp-kit";
+import { useCurrentAccount } from "@mysten/dapp-kit";
 import { Box, Container, Flex, Heading, Text, Callout } from "@radix-ui/themes";
 import { InfoCircledIcon } from "@radix-ui/react-icons";
 import { FileUpload } from "./components/FileUpload";
 import { UploadedFiles, UploadedFile } from "./components/UploadedFiles";
+import { AccountButton } from "./components/AccountButton";
 
 function App() {
   const currentAccount = useCurrentAccount();
@@ -32,12 +33,13 @@ function App() {
     localStorage.setItem("walrus-uploaded-files", JSON.stringify(uploadedFiles));
   }, [uploadedFiles]);
 
-  const handleUploadSuccess = (blobId: string, fileName: string, fileSize: number) => {
+  const handleUploadSuccess = (blobId: string, fileName: string, fileSize: number, uploadMethod: "http" | "transaction") => {
     const newFile: UploadedFile = {
       blobId,
       fileName,
       fileSize,
       uploadedAt: new Date(),
+      uploadMethod,
     };
     setUploadedFiles((prev) => [newFile, ...prev]);
   };
@@ -62,7 +64,7 @@ function App() {
         </Box>
 
         <Box>
-          <ConnectButton />
+          <AccountButton />
         </Box>
       </Flex>
       <Container>

@@ -3,7 +3,6 @@ import {
   Card,
   Flex,
   Text,
-  Button,
   Table,
   Badge,
   IconButton,
@@ -15,13 +14,15 @@ import {
   TrashIcon,
   CheckIcon,
 } from "@radix-ui/react-icons";
-import { downloadFromWalrus, formatFileSize, getWalrusUrl } from "../services/walrus";
+import { downloadFromWalrus, downloadFromWalrusWithAccount, formatFileSize, getWalrusUrl } from "../services/walrus";
+import { useSuiClient } from "@mysten/dapp-kit";
 
 export interface UploadedFile {
   blobId: string;
   fileName: string;
   fileSize: number;
   uploadedAt: Date;
+  uploadMethod?: "http" | "transaction"; // Track which upload method was used
 }
 
 interface UploadedFilesProps {
@@ -32,11 +33,15 @@ interface UploadedFilesProps {
 export function UploadedFiles({ files, onRemove }: UploadedFilesProps) {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const suiClient = useSuiClient();
 
   const handleDownload = async (file: UploadedFile) => {
     setDownloadingId(file.blobId);
     try {
-      const blob = await downloadFromWalrus(file.blobId);
+      // Use the appropriate download method based on how the file was uploaded
+      const blob = file.uploadMethod === "transaction"
+        ? await downloadFromWalrusWithAccount(file.blobId, suiClient)
+        : await downloadFromWalrus(file.blobId);
 
       // Create a download link
       const url = window.URL.createObjectURL(blob);
