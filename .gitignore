@@ -59,3 +59,4 @@ dist-ssr/
 *.md
 !README.md
 *.txt
+.vercel

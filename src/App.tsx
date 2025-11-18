@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { useCurrentAccount } from "@mysten/dapp-kit";
-import { Box, Container, Flex, Heading, Text, Callout } from "@radix-ui/themes";
+import { Box, Container, Flex, Heading, Text, Callout, Tabs } from "@radix-ui/themes";
 import { InfoCircledIcon } from "@radix-ui/react-icons";
 import { FileUpload } from "./components/FileUpload";
 import { UploadedFiles, UploadedFile } from "./components/UploadedFiles";
 import { AccountButton } from "./components/AccountButton";
+import { BlobDownload } from "./components/BlobDownload";
 
 function App() {
   const currentAccount = useCurrentAccount();
@@ -97,10 +98,27 @@ function App() {
             )}
 
             {currentAccount && (
-              <>
-                <FileUpload onUploadSuccess={handleUploadSuccess} />
-                <UploadedFiles files={uploadedFiles} onRemove={handleRemoveFile} />
-              </>
+              <Tabs.Root defaultValue="upload">
+                <Tabs.List>
+                  <Tabs.Trigger value="upload">Upload</Tabs.Trigger>
+                  <Tabs.Trigger value="files">Uploaded Files</Tabs.Trigger>
+                  <Tabs.Trigger value="download">Download</Tabs.Trigger>
+                </Tabs.List>
+
+                <Box pt="4">
+                  <Tabs.Content value="upload">
+                    <FileUpload onUploadSuccess={handleUploadSuccess} />
+                  </Tabs.Content>
+
+                  <Tabs.Content value="files">
+                    <UploadedFiles files={uploadedFiles} onRemove={handleRemoveFile} />
+                  </Tabs.Content>
+
+                  <Tabs.Content value="download">
+                    <BlobDownload />
+                  </Tabs.Content>
+                </Box>
+              </Tabs.Root>
             )}
           </Flex>
         </Container>
