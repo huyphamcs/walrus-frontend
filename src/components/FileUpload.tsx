@@ -14,7 +14,7 @@ export function FileUpload({ onUploadSuccess }: FileUploadProps) {
   const currentAccount = useCurrentAccount();
   const { mutateAsync: signAndExecuteTransaction } = useSignAndExecuteTransaction();
   const suiClient = useSuiClient();
-
+  
   const [uploadMode, setUploadMode] = useState<UploadMode>("testnet");
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
